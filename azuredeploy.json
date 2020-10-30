@@ -45,16 +45,9 @@
 		},
 		"virtualMachineSize": {
 			"type": "string",
-			"defaultValue": "Standard_DS2_V2",
+			"defaultValue": "Standard_DS2_v2",
 			"metadata": {
 				"description": "This is the Azure Virtual Machine size, and will affect the cost. If you don't know, just leave the default value."
-			}
-		},
-		"clusterName": {
-			"defaultValue": "krustlet",
-			"type": "string",
-			"metadata": {
-				"description": "Name of the Kubernetes cluster."
 			}
 		},
 		"kubernetesVersion": {
@@ -63,17 +56,10 @@
 			"metadata": {
 				"description": "Determines which version of Kubernetes will be deployed."
 			}
-		},
-		"dnsPrefix": {
-			"type": "string",
-			"defaultValue": "[uniqueString(resourceGroup().id)]",
-			"metadata": {
-				"description": "DNS prefix to use with the Kubernetes API server's fully-qualified domain name."
-			}
 		}
 	},
 	"variables": {
-		"addressPrefix": "10.0.0.0/16",
+		"clusterName": "krustlet",
 		"imageOffer": "UbuntuServer",
 		"imagePublisher": "Canonical",
 		"linuxConfiguration": {
@@ -86,11 +72,15 @@
 				]
 			}
 		},
+		"nicName": "krustletVMNic",
+		"nsgName": "krustletNSG",
+		"publicIPAddressName": "uniqueString(resourceGroup().id)",
+		"routeTableName": "aks-routetable",
+		"subnetName": "aks-subnet",
+		"subnetPrefix": "10.240.0.0/16",
+		"subnetRef": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'), '/subnets/', variables('subnetName'))]",
 		"ubuntuOSVersion": "18.04-LTS",
 		"virtualNetworkName": "aks-vnet",
-		"subnetName": "subnet",
-		"subnetPrefix": "10.0.0.0/24",
-		"subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]",
 		"vmName": "krustlet-wasi"
 	},
 	"resources": [
@@ -141,17 +131,24 @@
 						"createOption": "FromImage",
 						"diskSizeGB": 100
 					}
+				},
+				"networkProfile": {
+					"networkInterfaces": [
+						{
+							"id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]"
+						}
+					]
 				}
 			}
 		},
 		{
 			"type": "Microsoft.ContainerService/managedClusters",
 			"apiVersion": "2020-09-01",
-			"name": "[parameters('clusterName')]",
+			"name": "[variables('clusterName')]",
 			"location": "[parameters('location')]",
 			"properties": {
 				"kubernetesVersion": "[parameters('kubernetesVersion')]",
-				"dnsPrefix": "[parameters('dnsPrefix')]",
+				"dnsPrefix": "[uniqueString(resourceGroup().id)]",
 				"agentPoolProfiles": [
 					{
 						"name": "nodepool1",
@@ -171,28 +168,154 @@
 				"linuxProfile": {
 					"adminUsername": "[parameters('adminUsername')]",
 					"ssh": "[variables('linuxConfiguration').ssh]"
+				},
+				"networkProfile": {
+					"networkPlugin": "kubenet",
+					"loadBalancerSku": "standard",
+					"loadBalancerProfile": {
+						"managedOutboundIPs": {
+							"count": 1
+						},
+						"effectiveOutboundIPs": [
+							{
+								"id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))]"
+							}
+						]
+					},
+					"podCidr": "10.244.0.0/16",
+					"serviceCidr": "10.0.0.0/16",
+					"dnsServiceIP": "10.0.0.10",
+					"dockerBridgeCidr": "172.17.0.1/16",
+					"outboundType": "loadBalancer"
 				}
 			}
 		},
 		{
-			"type": "Microsoft.ContainerService/managedClusters/agentPools",
-			"apiVersion": "2020-09-01",
-			"name": "[concat(parameters('clusterName'), '/nodepool1')]",
-			"dependsOn": [
-				"[resourceId('Microsoft.ContainerService/managedClusters', parameters('clusterName'))]"
-			],
+			"type": "Microsoft.Network/networkInterfaces",
+			"apiVersion": "2020-05-01",
+			"name": "[parameters('nicName')]",
+			"location": "[parameters('location')]",
 			"properties": {
-				"count": 3,
-				"vmSize": "[parameters('virtualMachineSize')]",
-				"osDiskSizeGB": 128,
-				"osDiskType": "Managed",
-				"maxPods": 110,
-				"type": "VirtualMachineScaleSets",
-				"orchestratorVersion": "[parameters('kubernetesVersion')]",
-				"enableNodePublicIP": false,
-				"nodeLabels": {},
-				"mode": "System",
-				"osType": "Linux"
+				"ipConfigurations": [
+					{
+						"name": "ipconfigkrustlet",
+						"properties": {
+							"privateIPAllocationMethod": "Dynamic",
+							"subnet": {
+								"id": "[concat(resourceId('Microsoft.Network/networkInterfaces', variables('virtualNetworkName')), '/subnets/', variables('subnetName'))]"
+							},
+							"primary": true,
+							"privateIPAddressVersion": "IPv4"
+						}
+					}
+				],
+				"dnsSettings": {
+					"dnsServers": []
+				},
+				"enableAcceleratedNetworking": false,
+				"enableIPForwarding": false,
+				"networkSecurityGroup": {
+					"id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]"
+				}
+			}
+		},
+		{
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2020-05-01",
+            "name": "[parameters('nsgName')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "default-allow-ssh",
+                        "properties": {
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "22",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 1000,
+                            "direction": "Inbound",
+                            "sourcePortRanges": [],
+                            "destinationPortRanges": [],
+                            "sourceAddressPrefixes": [],
+                            "destinationAddressPrefixes": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+            "apiVersion": "2020-05-01",
+            "name": "[concat(parameters('nsgName'), '/default-allow-ssh')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsgName'))]"
+            ],
+            "properties": {
+                "protocol": "Tcp",
+                "sourcePortRange": "*",
+                "destinationPortRange": "22",
+                "sourceAddressPrefix": "*",
+                "destinationAddressPrefix": "*",
+                "access": "Allow",
+                "priority": 1000,
+                "direction": "Inbound",
+                "sourcePortRanges": [],
+                "destinationPortRanges": [],
+                "sourceAddressPrefixes": [],
+                "destinationAddressPrefixes": []
+            }
+		},
+		{
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2020-05-01",
+            "name": "[parameters('virtualNetworkName')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "10.0.0.0/8"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[parameters('subnetName')]",
+                        "properties": {
+                            "addressPrefix": "[parameters('subnetPrefix')]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsgName'))]"
+                            },
+                            "routeTable": {
+                                "id": "[resourceId('Microsoft.Network/routeTables', parameters('routeTableName'))]"
+                            },
+                            "serviceEndpoints": [],
+                            "delegations": [],
+                            "privateEndpointNetworkPolicies": "Enabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled"
+                        }
+                    }
+                ],
+                "virtualNetworkPeerings": [],
+                "enableDdosProtection": false,
+                "enableVmProtection": false
+            }
+        },
+		{
+			"type": "Microsoft.Network/publicIPAddresses",
+			"apiVersion": "2020-05-01",
+			"name": "[variables('publicIPAddressName')]",
+			"location": "[parameters('location')]",
+			"tags": {
+				"owner": "kubernetes",
+				"type": "aks-slb-managed-outbound-ip"
+			},
+			"sku": {
+				"name": "Standard"
+			},
+			"properties": {
+				"publicIPAllocationMethod": "Dynamic"
 			}
 		}
 	]
