@@ -20,13 +20,13 @@
 			"type": "string",
 			"defaultValue": "krustlet",
 			"metadata": {
-				"description": "Admin user name you will use to log on to the Virtual Machines. If left blank, a random username will be generated. (optional)"
+				"description": "The administrator username you will use to log on to the virtual machines."
 			}
 		},
 		"sshPublicKey": {
 			"type": "securestring",
 			"metadata": {
-				"description": "SSH Public Key data for SSH'ing into the Virtual Machines. If one is not provided, a public key will be generated. (optional)"
+				"description": "SSH public key for SSH'ing into the virtual machines."
 			}
 		},
 		"location": {
@@ -66,20 +66,21 @@
 		},
 		"dnsPrefix": {
 			"type": "string",
+			"defaultValue": "[uniqueString(resourceGroup().id)]",
 			"metadata": {
-				"description": "DNS prefix to use with the Kubernetes API server's fully-qualified domain name. (optional)"
+				"description": "DNS prefix to use with the Kubernetes API server's fully-qualified domain name."
 			}
 		},
 		"servicePrincipalClientId": {
 			"type": "securestring",
 			"metadata": {
-				"description": "Service principal client ID. If left blank, one will be generated for you. (optional)"
+				"description": "Service principal client ID."
 			}
 		},
 		"servicePrincipalClientSecret": {
 			"type": "securestring",
 			"metadata": {
-				"description": "Service principal client secret. If left blank, one will be generated for you. (optional)"
+				"description": "Service principal client secret."
 			}
 		}
 	},
@@ -92,7 +93,6 @@
 			"ssh": {
 				"publicKeys": [
 					{
-						"path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
 						"keyData": "[parameters('sshPublicKey')]"
 					}
 				]
@@ -183,10 +183,6 @@
 				"linuxProfile": {
 					"adminUsername": "[parameters('adminUsername')]",
 					"ssh": "[variables('linuxConfiguration.ssh')]"
-				},
-				"servicePrincipalProfile": {
-					"clientId": "[parameters('servicePrincipalClientId')]",
-					"Secret": "[parameters('servicePrincipalClientSecret')]"
 				}
 			}
 		},
