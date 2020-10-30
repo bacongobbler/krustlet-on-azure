@@ -5,7 +5,7 @@
 		"adminUsername": {
 			"value": "GEN-UNIQUE-10"
 		},
-		"adminPasswordOrKey": {
+		"sshPublicKey": {
 			"value": "GEN-SSH-PUB-KEY"
 		},
 		"dnsPrefix": {

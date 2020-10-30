@@ -16,27 +16,17 @@
 				"description": "The sasToken required to access _artifactsLocation.  If your artifacts are stored on a public repo or public storage account you can leave this blank."
 			}
 		},
-		"adminPasswordOrKey": {
-			"type": "securestring",
-			"metadata": {
-				"description": "SSH Key or password for the Virtual Machine. SSH key is recommended."
-			}
-		},
 		"adminUsername": {
 			"type": "string",
+			"defaultValue": "krustlet",
 			"metadata": {
-				"description": "Admin user name you will use to log on to the Virtual Machine."
+				"description": "Admin user name you will use to log on to the Virtual Machines. If left blank, a random username will be generated. (optional)"
 			}
 		},
-		"authenticationType": {
-			"type": "string",
-			"defaultValue": "sshPublicKey",
-			"allowedValues": [
-				"sshPublicKey",
-				"password"
-			],
+		"sshPublicKey": {
+			"type": "securestring",
 			"metadata": {
-				"description": "Type of authentication to use on the Virtual Machine. SSH key is recommended."
+				"description": "SSH Public Key data for SSH'ing into the Virtual Machines. If one is not provided, a public key will be generated. (optional)"
 			}
 		},
 		"location": {
@@ -50,7 +40,7 @@
 			"type": "string",
 			"defaultValue": "https://krustlet.blob.core.windows.net/releases/krustlet-canary-linux-amd64.tar.gz",
 			"metadata": {
-				"description": "URL to a Krustlet release archive"
+				"description": "URL to a Krustlet release archive."
 			}
 		},
 		"virtualMachineSize": {
@@ -62,28 +52,34 @@
 		},
 		"clusterName": {
 			"defaultValue": "krustlet",
-			"type": "string"
+			"type": "string",
+			"metadata": {
+				"description": "Name of the Kubernetes cluster."
+			}
 		},
 		"kubernetesVersion": {
 			"defaultValue": "1.17.11",
-			"type": "string"
+			"type": "string",
+			"metadata": {
+				"description": "Determines which version of Kubernetes will be deployed."
+			}
 		},
 		"dnsPrefix": {
 			"type": "string",
 			"metadata": {
-				"description": "Optional DNS prefix to use with hosted Kubernetes API server FQDN."
+				"description": "DNS prefix to use with the Kubernetes API server's fully-qualified domain name. (optional)"
 			}
 		},
 		"servicePrincipalClientId": {
 			"type": "securestring",
 			"metadata": {
-				"description": "Client ID (used by cloudprovider)"
+				"description": "Service principal client ID. If left blank, one will be generated for you. (optional)"
 			}
 		},
 		"servicePrincipalClientSecret": {
 			"type": "securestring",
 			"metadata": {
-				"description": "The Service Principal Client Secret."
+				"description": "Service principal client secret. If left blank, one will be generated for you. (optional)"
 			}
 		}
 	},
@@ -97,21 +93,16 @@
 				"publicKeys": [
 					{
 						"path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
-						"keyData": "[parameters('adminPasswordOrKey')]"
+						"keyData": "[parameters('sshPublicKey')]"
 					}
 				]
 			}
 		},
-		"lowerCaseDNSName": "[toLower(parameters('dnsNameForPublicIP'))]",
-		"networkSecurityGroupName": "[concat(variables('lowerCaseDNSName'), 'nsg')]",
-		"nicName": "minecraftvmnic",
-		"publicIPAddressName": "minecraftpublicip",
-		"publicIPAddressType": "Dynamic",
-		"subnetPrefix": "10.0.0.0/24",
-		"subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]",
 		"ubuntuOSVersion": "18.04-LTS",
 		"virtualNetworkName": "aks-vnet",
 		"subnetName": "subnet",
+		"subnetPrefix": "10.0.0.0/24",
+		"subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]",
 		"vmName": "krustlet-wasi"
 	},
 	"resources": [
@@ -148,8 +139,7 @@
 				"osProfile": {
 					"computerName": "[variables('vmName')]",
 					"adminUsername": "[parameters('adminUsername')]",
-					"adminPassword": "[parameters('adminPasswordOrKey')]",
-					"linuxConfiguration": "[if(equals(parameters('authenticationType'), 'password'), json('null'), variables('linuxConfiguration'))]"
+					"linuxConfiguration": "[variables('linuxConfiguration')]"
 				},
 				"storageProfile": {
 					"imageReference": {
