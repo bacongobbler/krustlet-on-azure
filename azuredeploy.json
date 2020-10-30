@@ -170,7 +170,7 @@
 				],
 				"linuxProfile": {
 					"adminUsername": "[parameters('adminUsername')]",
-					"ssh": "[variables('linuxConfiguration.ssh')]"
+					"ssh": "[variables('linuxConfiguration').ssh]"
 				}
 			}
 		},
