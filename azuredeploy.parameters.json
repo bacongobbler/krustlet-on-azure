@@ -10,12 +10,6 @@
 		},
 		"dnsPrefix": {
 			"value": "GEN-UNIQUE"
-		},
-		"servicePrincipalClientId": {
-			"value": "GEN-AZUREAD-AKS-APPID"
-		},
-		"servicePrincipalClientSecret": {
-			"value": "GEN-AZUREAD-AKS-APPID-SECRET"
 		}
 	}
 }

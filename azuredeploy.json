@@ -70,18 +70,6 @@
 			"metadata": {
 				"description": "DNS prefix to use with the Kubernetes API server's fully-qualified domain name."
 			}
-		},
-		"servicePrincipalClientId": {
-			"type": "securestring",
-			"metadata": {
-				"description": "Service principal client ID."
-			}
-		},
-		"servicePrincipalClientSecret": {
-			"type": "securestring",
-			"metadata": {
-				"description": "Service principal client secret."
-			}
 		}
 	},
 	"variables": {
