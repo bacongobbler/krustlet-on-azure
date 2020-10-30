@@ -39,7 +39,7 @@
 				"description": "Type of authentication to use on the Virtual Machine. SSH key is recommended."
 			}
 		},
-		"krustletUrl": {
+		"krustletURL": {
 			"type": "string",
 			"defaultValue": "https://krustlet.blob.core.windows.net/releases/krustlet-canary-linux-amd64.tar.gz",
 			"metadata": {
@@ -110,7 +110,7 @@
 					"fileUris": [
 						"[uri(parameters('_artifactsLocation'), concat('install_krustlet.sh', parameters('_artifactsLocationSasToken')))]"
 					],
-					"commandToExecute": "[concat('bash install_krustlet.sh', ' ', parameters('krustletUrl'))]"
+					"commandToExecute": "[concat('bash install_krustlet.sh', ' ', parameters('krustletURL'))]"
 				}
 			}
 		},
