@@ -1,0 +1,151 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"_artifactsLocation": {
+			"type": "string",
+			"metadata": {
+				"description": "The base URI where artifacts required by this template are located. For example, if stored on a public GitHub repo, you'd use the following URI: https://raw.githubusercontent.com/bacongobbler/krustlet-on-azure/main/."
+			},
+			"defaultValue": "https://raw.githubusercontent.com/bacongobbler/krustlet-on-azure/main/"
+		},
+		"_artifactsLocationSasToken": {
+			"type": "securestring",
+			"defaultValue": "",
+			"metadata": {
+				"description": "The sasToken required to access _artifactsLocation.  If your artifacts are stored on a public repo or public storage account you can leave this blank."
+			}
+		},
+		"adminPasswordOrKey": {
+			"type": "securestring",
+			"metadata": {
+				"description": "SSH Key or password for the Virtual Machine. SSH key is recommended."
+			}
+		},
+		"adminUsername": {
+			"type": "string",
+			"metadata": {
+				"description": "Admin user name you will use to log on to the Virtual Machine."
+			}
+		},
+		"authenticationType": {
+			"type": "string",
+			"defaultValue": "sshPublicKey",
+			"allowedValues": [
+				"sshPublicKey",
+				"password"
+			],
+			"metadata": {
+				"description": "Type of authentication to use on the Virtual Machine. SSH key is recommended."
+			}
+		},
+		"krustletUrl": {
+			"type": "string",
+			"defaultValue": "https://krustlet.blob.core.windows.net/releases/krustlet-canary-linux-amd64.tar.gz",
+			"metadata": {
+				"description": "URL to a Krustlet release archive"
+			}
+		},
+		"virtualMachineSize": {
+			"type": "string",
+			"defaultValue": "Standard_A1",
+			"metadata": {
+				"description": "This is the Azure Virtual Machine size, and will affect the cost. If you don't know, just leave the default value."
+			}
+		},
+		"white-list": {
+			"type": "string",
+			"defaultValue": "false",
+			"allowedValues": [
+				"false",
+				"true"
+			],
+			"metadata": {
+				"description": "Only ops and whitelisted players can connect"
+			}
+		}
+	},
+	"variables": {
+		"addressPrefix": "10.0.0.0/16",
+		"imageOffer": "UbuntuServer",
+		"imagePublisher": "Canonical",
+		"linuxConfiguration": {
+			"disablePasswordAuthentication": true,
+			"ssh": {
+				"publicKeys": [
+					{
+						"path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
+						"keyData": "[parameters('adminPasswordOrKey')]"
+					}
+				]
+			}
+		},
+		"lowerCaseDNSName": "[toLower(parameters('dnsNameForPublicIP'))]",
+		"networkSecurityGroupName": "[concat(variables('lowerCaseDNSName'), 'nsg')]",
+		"nicName": "minecraftvmnic",
+		"publicIPAddressName": "minecraftpublicip",
+		"publicIPAddressType": "Dynamic",
+		"subnetName": "subnet",
+		"subnetPrefix": "10.0.0.0/24",
+		"subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]",
+		"ubuntuOSVersion": "18.04-LTS",
+		"virtualNetworkName": "minecraftvnet",
+		"vmName": "krustlet"
+	},
+	"resources": [
+		{
+			"type": "Microsoft.Compute/virtualMachines/extensions",
+			"name": "[concat(variables('vmName'),'/newuserscript')]",
+			"apiVersion": "2019-12-01",
+			"location": "[parameters('location')]",
+			"dependsOn": [
+				"[resourceId('Microsoft.Compute/virtualMachines/', variables('vmName'))]"
+			],
+			"properties": {
+				"publisher": "Microsoft.Azure.Extensions",
+				"type": "CustomScript",
+				"typeHandlerVersion": "2.0",
+				"autoUpgradeMinorVersion": true,
+				"settings": {
+					"fileUris": [
+						"[uri(parameters('_artifactsLocation'), concat('install_krustlet.sh', parameters('_artifactsLocationSasToken')))]"
+					],
+					"commandToExecute": "[concat('bash install_krustlet.sh', ' ', parameters('krustletUrl'))]"
+				}
+			}
+		},
+		{
+			"apiVersion": "2019-12-01",
+			"type": "Microsoft.Compute/virtualMachines",
+			"name": "[variables('vmName')]",
+			"location": "[parameters('location')]",
+			"dependsOn": [
+				"[resourceId('Microsoft.Network/networkInterfaces/', variables('nicName'))]"
+			],
+			"properties": {
+				"hardwareProfile": {
+					"vmSize": "[parameters('virtualMachineSize')]"
+				},
+				"osProfile": {
+					"computerName": "[variables('vmName')]",
+					"adminUsername": "[parameters('adminUsername')]",
+					"adminPassword": "[parameters('adminPasswordOrKey')]",
+					"linuxConfiguration": "[if(equals(parameters('authenticationType'), 'password'), json('null'), variables('linuxConfiguration'))]"
+				},
+				"storageProfile": {
+					"imageReference": {
+						"publisher": "[variables('imagePublisher')]",
+						"offer": "[variables('imageOffer')]",
+						"sku": "[variables('ubuntuOSVersion')]",
+						"version": "latest"
+					},
+					"osDisk": {
+						"caching": "ReadWrite",
+						"createOption": "FromImage",
+						"diskSizeGB": 100
+					}
+				}
+			}
+		}
+	]
+}
