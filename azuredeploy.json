@@ -78,7 +78,7 @@
 		"routeTableName": "aks-routetable",
 		"subnetName": "aks-subnet",
 		"subnetPrefix": "10.240.0.0/16",
-		"subnetRef": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'), '/subnets/', variables('subnetName'))]",
+		"subnetRef": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName')), '/subnets/', variables('subnetName'))]",
 		"ubuntuOSVersion": "18.04-LTS",
 		"virtualNetworkName": "aks-vnet",
 		"vmName": "krustlet-wasi"
