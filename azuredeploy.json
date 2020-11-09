@@ -113,7 +113,7 @@
 					"fileUris": [
 						"[uri(parameters('_artifactsLocation'), concat('install_krustlet.sh', parameters('_artifactsLocationSasToken')))]"
 					],
-					"commandToExecute": "[concat('bash install_krustlet.sh', ' ', parameters('krustletURL'))]"
+					"commandToExecute": "[concat('bash install_krustlet.sh', ' ', parameters('krustletURL'), ' ', variables('clusterName'), ' ', parameters('location'))]"
 				}
 			}
 		},
@@ -161,6 +161,9 @@
 			"apiVersion": "2020-09-01",
 			"name": "[variables('clusterName')]",
 			"location": "[parameters('location')]",
+			"dependsOn": [
+				"[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]"
+			],
 			"properties": {
 				"kubernetesVersion": "[parameters('kubernetesVersion')]",
 				"dnsPrefix": "[uniqueString(resourceGroup().id)]",
@@ -171,6 +174,7 @@
 						"vmSize": "[parameters('virtualMachineSize')]",
 						"osDiskSizeGB": 128,
 						"osDiskType": "Managed",
+						"vnetSubnetID": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]",
 						"maxPods": 110,
 						"type": "VirtualMachineScaleSets",
 						"orchestratorVersion": "[parameters('kubernetesVersion')]",
@@ -224,7 +228,7 @@
 						"properties": {
 							"privateIPAllocationMethod": "Dynamic",
 							"subnet": {
-								"id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName')), '/subnets/', variables('subnetName'))]"
+								"id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]"
 							},
 							"primary": true,
 							"privateIPAddressVersion": "IPv4"

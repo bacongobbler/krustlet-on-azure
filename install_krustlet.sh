@@ -3,6 +3,8 @@
 # Custom Krustlet server install script for Ubuntu 20.04
 
 KRUSTLET_URL=$1
+CLUSTER_NAME=$2
+RESOURCE_GROUP=$3
 
 # update base dependencies
 apt update
@@ -11,9 +13,20 @@ apt upgrade -y
 # install curl
 apt install -y curl
 
+# install the Azure CLI
+curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+
 # download krustlet
 curl "${KRUSTLET_URL}" | tar -xzf -
 mv krustlet-* /usr/local/bin/
+
+# prepare krustlet config directory
+mkdir /etc/krustlet
+chown -R krustlet:krustlet /etc/krustlet
+
+# fetch AKS bootstrap credentials
+az login --identity
+az aks get-credentials -n $CLUSTER_NAME -g $RESOURCE_GROUP -f /etc/krustlet/config/kubeconfig
 
 # create a service
 cat << EOF > /etc/systemd/system/krustlet.service
@@ -40,3 +53,5 @@ chmod +x /etc/systemd/system/krustlet.service
 
 systemctl enable krustlet
 systemctl start krustlet
+
+kubectl certificate approve krustlet-wasi-tls
