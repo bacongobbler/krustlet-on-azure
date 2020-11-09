@@ -86,7 +86,7 @@
 		},
 		"nicName": "krustletVMNic",
 		"nsgName": "krustletNSG",
-		"publicIPAddressName": "uniqueString(resourceGroup().id)",
+		"publicIPAddressName": "[uniqueString(resourceGroup().id)]",
 		"routeTableName": "aks-routetable",
 		"subnetName": "aks-subnet",
 		"subnetPrefix": "10.240.0.0/16",
@@ -198,6 +198,10 @@
 					"dnsServiceIP": "10.0.0.10",
 					"dockerBridgeCidr": "172.17.0.1/16",
 					"outboundType": "loadBalancer"
+				},
+				"servicePrincipalProfile": {
+					"clientId": "[parameters('servicePrincipalClientId')]",
+					"secret": "[parameters('servicePrincipalClientSecret')]"
 				}
 			}
 		},
