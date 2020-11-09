@@ -15,10 +15,10 @@ apt upgrade -y
 apt install -y curl
 
 # install the Azure CLI
-curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+curl -sSL https://aka.ms/InstallAzureCLIDeb | bash
 
 # download krustlet
-curl "${KRUSTLET_URL}" | tar -xzf -
+curl -sSL "${KRUSTLET_URL}" | tar -xzf -
 mv krustlet-* /usr/local/bin/
 
 # prepare krustlet config directory
