@@ -274,7 +274,7 @@
 				},
 				"subnets": [
 					{
-						"name": "[parameters('subnetName')]",
+						"name": "[variables('subnetName')]",
 						"properties": {
 							"addressPrefix": "[parameters('subnetPrefix')]",
 							"networkSecurityGroup": {
@@ -305,7 +305,7 @@
 				"name": "Standard"
 			},
 			"properties": {
-				"publicIPAllocationMethod": "Dynamic"
+				"publicIPAllocationMethod": "Static"
 			}
 		}
 	]
