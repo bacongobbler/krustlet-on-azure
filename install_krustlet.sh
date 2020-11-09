@@ -5,6 +5,7 @@
 KRUSTLET_URL=$1
 CLUSTER_NAME=$2
 RESOURCE_GROUP=$3
+SERVICE_IDENTITY_ID=$4
 
 # update base dependencies
 apt update
@@ -25,7 +26,7 @@ mkdir -p /etc/krustlet/config
 chown -R krustlet:krustlet /etc/krustlet
 
 # fetch AKS bootstrap credentials
-az login --identity
+az login --identity -u $SERVICE_IDENTITY_ID
 az aks get-credentials -n $CLUSTER_NAME -g $RESOURCE_GROUP -f /etc/krustlet/config/kubeconfig
 
 # create a service

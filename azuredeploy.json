@@ -85,9 +85,11 @@
 				]
 			}
 		},
+		"msiName": "krustletmsi",
 		"nicName": "krustletVMNic",
 		"nsgName": "krustletNSG",
 		"publicIPAddressName": "[uniqueString(resourceGroup().id)]",
+		"roleAssignmentId": "[guid(concat(resourceGroup().id,parameters('msiName'), 'contributor'))]",
 		"routeTableName": "aks-routetable",
 		"subnetName": "aks-subnet",
 		"subnetPrefix": "10.240.0.0/16",
@@ -113,8 +115,28 @@
 					"fileUris": [
 						"[uri(parameters('_artifactsLocation'), concat('install_krustlet.sh', parameters('_artifactsLocationSasToken')))]"
 					],
-					"commandToExecute": "[concat('bash install_krustlet.sh', ' ', parameters('krustletURL'), ' ', variables('clusterName'), ' ', parameters('location'))]"
+					"commandToExecute": "[concat('bash install_krustlet.sh', ' ', parameters('krustletURL'), ' ', variables('clusterName'), ' ', parameters('location'), ' ', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('msiName')))]"
 				}
+			}
+		},
+		{
+			"type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+			"name": "[variables('msiName')]",
+			"apiVersion": "2018-11-30",
+			"location": "[parameters('location')]"
+		},
+		{
+			"type": "Microsoft.Authorization/roleAssignments",
+			"name": "[variables('roleAssignmentId')]",
+			"apiVersion": "2020-04-01-preview",
+			"dependsOn": [
+					"[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('msiName'))]"
+			],
+			"properties": {
+					"roleDefinitionId": "[variables('contributorRoleDefinitionId')]",
+					"principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities',variables('msiName')), '2018-11-30').principalId]",
+					"scope": "[resourceGroup().id]",
+					"principalType": "ServicePrincipal"
 			}
 		},
 		{
@@ -124,8 +146,16 @@
 			"location": "[parameters('location')]",
 			"dependsOn": [
 				"[resourceId('Microsoft.ContainerService/managedClusters', variables('clusterName'))]",
-				"[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]"
+				"[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]",
+				"[resourceId('Microsoft.Authorization/roleAssignments', variables('roleAssignmentId'))]"
+
 			],
+			"identity": {
+				"type": "UserAssigned",
+				"userAssignedIdentities": {
+					"[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('msiName'))]": {}
+				}
+			},
 			"properties": {
 				"hardwareProfile": {
 					"vmSize": "[parameters('virtualMachineSize')]"
