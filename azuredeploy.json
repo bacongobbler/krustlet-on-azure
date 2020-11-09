@@ -123,6 +123,7 @@
 			"apiVersion": "2018-06-01",
 			"location": "[parameters('location')]",
 			"dependsOn": [
+				"[resourceId('Microsoft.ContainerService/managedClusters', variables('clusterName'))]",
 				"[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]"
 			],
 			"properties": {
