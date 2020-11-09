@@ -21,7 +21,7 @@ curl "${KRUSTLET_URL}" | tar -xzf -
 mv krustlet-* /usr/local/bin/
 
 # prepare krustlet config directory
-mkdir /etc/krustlet
+mkdir -p /etc/krustlet/config
 chown -R krustlet:krustlet /etc/krustlet
 
 # fetch AKS bootstrap credentials
