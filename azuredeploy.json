@@ -121,6 +121,9 @@
 			"type": "Microsoft.Compute/virtualMachines",
 			"apiVersion": "2018-06-01",
 			"location": "[parameters('location')]",
+			"dependsOn": [
+				"[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]"
+			],
 			"properties": {
 				"hardwareProfile": {
 					"vmSize": "[parameters('virtualMachineSize')]"
@@ -217,7 +220,7 @@
 						"properties": {
 							"privateIPAllocationMethod": "Dynamic",
 							"subnet": {
-								"id": "[concat(resourceId('Microsoft.Network/networkInterfaces', variables('virtualNetworkName')), '/subnets/', variables('subnetName'))]"
+								"id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName')), '/subnets/', variables('subnetName'))]"
 							},
 							"primary": true,
 							"privateIPAddressVersion": "IPv4"
@@ -266,6 +269,9 @@
 			"apiVersion": "2020-05-01",
 			"name": "[variables('virtualNetworkName')]",
 			"location": "[parameters('location')]",
+			"dependsOn": [
+				"[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]"
+			],
 			"properties": {
 				"addressSpace": {
 					"addressPrefixes": [
