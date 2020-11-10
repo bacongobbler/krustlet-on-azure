@@ -131,7 +131,7 @@
 		{
 			"type": "Microsoft.Authorization/roleAssignments",
 			"name": "[variables('contributorRoleAssignmentId')]",
-			"apiVersion": "2014-10-01-preview",
+			"apiVersion": "2020-04-01-preview",
 			"dependsOn": [
 				"[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('msiName'))]"
 			],
@@ -145,7 +145,7 @@
 		{
 			"type": "Microsoft.Authorization/roleAssignments",
 			"name": "[variables('listClusterUserCredentialRoleAssignmentId')]",
-			"apiVersion": "2014-10-01-preview",
+			"apiVersion": "2020-04-01-preview",
 			"dependsOn": [
 				"[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('msiName'))]"
 			],
