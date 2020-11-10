@@ -6,6 +6,7 @@ KRUSTLET_URL=$1
 CLUSTER_NAME=$2
 RESOURCE_GROUP=$3
 SERVICE_IDENTITY_ID=$4
+KUBERNETES_VERSION=$5
 
 # update base dependencies
 apt update
@@ -17,7 +18,12 @@ apt install -y curl
 # install the Azure CLI
 curl -sSL https://aka.ms/InstallAzureCLIDeb | bash
 
-# download krustlet
+# install kubectl
+curl -sSLO "https://storage.googleapis.com/kubernetes-release/release/v$KUBERNETES_VERSION/bin/linux/amd64/kubectl"
+chmod 755 kubectl
+mv kubectl /usr/local/bin/
+
+# install krustlet
 curl -sSL "${KRUSTLET_URL}" | tar -xzf -
 mv krustlet-* /usr/local/bin/
 
@@ -27,7 +33,8 @@ chown -R krustlet:krustlet /etc/krustlet
 
 # fetch AKS bootstrap credentials
 az login --identity -u $SERVICE_IDENTITY_ID
-az aks get-credentials -n $CLUSTER_NAME -g $RESOURCE_GROUP -f /etc/krustlet/config/kubeconfig
+az aks get-credentials -n $CLUSTER_NAME -g $RESOURCE_GROUP
+cp ~/.kube/config /etc/krustlet/config/kubeconfig
 
 # create a service
 cat << EOF > /etc/systemd/system/krustlet.service
@@ -54,5 +61,7 @@ chmod +x /etc/systemd/system/krustlet.service
 
 systemctl enable krustlet
 systemctl start krustlet
+
+sleep 3
 
 kubectl certificate approve krustlet-wasi-tls

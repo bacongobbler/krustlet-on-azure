@@ -72,6 +72,7 @@
 	},
 	"variables": {
 		"contributorRoleDefinitionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]",
+		"listClusterUserCredentialRoleDefinitionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', '4abbcc35-e782-43d8-92c5-2d3f1bd2253f')]",
 		"clusterName": "krustlet",
 		"imageOffer": "UbuntuServer",
 		"imagePublisher": "Canonical",
@@ -90,7 +91,8 @@
 		"nicName": "krustletVMNic",
 		"nsgName": "krustletNSG",
 		"publicIPAddressName": "[uniqueString(resourceGroup().id)]",
-		"roleAssignmentId": "[guid(concat(resourceGroup().id, variables('msiName'), 'contributor'))]",
+		"contributorRoleAssignmentId": "[guid(concat(resourceGroup().id, variables('msiName'), 'contributor'))]",
+		"listClusterUserCredentialRoleAssignmentId": "[guid(concat(resourceGroup().id, variables('msiName'), 'listClusterUserCredential'))]",
 		"routeTableName": "aks-routetable",
 		"subnetName": "aks-subnet",
 		"subnetPrefix": "10.240.0.0/16",
@@ -116,7 +118,7 @@
 					"fileUris": [
 						"[uri(parameters('_artifactsLocation'), concat('install_krustlet.sh', parameters('_artifactsLocationSasToken')))]"
 					],
-					"commandToExecute": "[concat('bash install_krustlet.sh', ' ', parameters('krustletURL'), ' ', variables('clusterName'), ' ', parameters('location'), ' ', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('msiName')))]"
+					"commandToExecute": "[concat('bash install_krustlet.sh', ' ', parameters('krustletURL'), ' ', variables('clusterName'), ' ', parameters('location'), ' ', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('msiName')), ' ', parameters('kubernetesVersion'))]"
 				}
 			}
 		},
@@ -128,16 +130,30 @@
 		},
 		{
 			"type": "Microsoft.Authorization/roleAssignments",
-			"name": "[variables('roleAssignmentId')]",
-			"apiVersion": "2018-09-01-preview",
+			"name": "[variables('contributorRoleAssignmentId')]",
+			"apiVersion": "2014-10-01-preview",
 			"dependsOn": [
-					"[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('msiName'))]"
+				"[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('msiName'))]"
 			],
 			"properties": {
-					"roleDefinitionId": "[variables('contributorRoleDefinitionId')]",
-					"principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('msiName')), '2018-11-30').principalId]",
-					"scope": "[resourceGroup().id]",
-					"principalType": "ServicePrincipal"
+				"roleDefinitionId": "[variables('contributorRoleDefinitionId')]",
+				"principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('msiName')), '2018-11-30').principalId]",
+				"scope": "[resourceGroup().id]",
+				"principalType": "ServicePrincipal"
+			}
+		},
+		{
+			"type": "Microsoft.Authorization/roleAssignments",
+			"name": "[variables('listClusterUserCredentialRoleAssignmentId')]",
+			"apiVersion": "2014-10-01-preview",
+			"dependsOn": [
+				"[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('msiName'))]"
+			],
+			"properties": {
+				"roleDefinitionId": "[variables('listClusterUserCredentialRoleDefinitionId')]",
+				"principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('msiName')), '2018-11-30').principalId]",
+				"scope": "[resourceGroup().id]",
+				"principalType": "ServicePrincipal"
 			}
 		},
 		{
@@ -148,8 +164,7 @@
 			"dependsOn": [
 				"[resourceId('Microsoft.ContainerService/managedClusters', variables('clusterName'))]",
 				"[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]",
-				"[resourceId('Microsoft.Authorization/roleAssignments', variables('roleAssignmentId'))]"
-
+				"[resourceId('Microsoft.Authorization/roleAssignments', variables('listClusterUserCredentialRoleAssignmentId'))]"
 			],
 			"identity": {
 				"type": "UserAssigned",
