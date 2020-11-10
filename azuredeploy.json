@@ -129,7 +129,7 @@
 		{
 			"type": "Microsoft.Authorization/roleAssignments",
 			"name": "[variables('roleAssignmentId')]",
-			"apiVersion": "2020-04-01-preview",
+			"apiVersion": "2018-09-01-preview",
 			"dependsOn": [
 					"[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('msiName'))]"
 			],
