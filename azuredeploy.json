@@ -138,7 +138,7 @@
 			"properties": {
 				"roleDefinitionId": "[variables('contributorRoleDefinitionId')]",
 				"principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('msiName')), '2018-11-30').principalId]",
-				"scope": "[resourceGroup().name]",
+				"scope": "[resourceGroup().id]",
 				"principalType": "ServicePrincipal"
 			}
 		},
