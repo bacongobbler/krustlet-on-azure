@@ -34,7 +34,8 @@ chown -R krustlet:krustlet /etc/krustlet
 # fetch AKS bootstrap credentials
 az login --identity -u $SERVICE_IDENTITY_ID
 az aks get-credentials -n $CLUSTER_NAME -g $RESOURCE_GROUP
-cp ~/.kube/config /etc/krustlet/config/kubeconfig
+cp $HOME/.kube/config /etc/krustlet/config/kubeconfig
+chown krustlet:krustlet /etc/krustlet/config/kubeconfig
 
 # create a service
 cat << EOF > /etc/systemd/system/krustlet.service
@@ -64,4 +65,4 @@ systemctl start krustlet
 
 sleep 3
 
-kubectl certificate approve krustlet-wasi-tls
+kubectl --kubeconfig=$HOME/.kube/config certificate approve krustlet-wasi-tls
