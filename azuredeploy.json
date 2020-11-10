@@ -118,7 +118,7 @@
 					"fileUris": [
 						"[uri(parameters('_artifactsLocation'), concat('install_krustlet.sh', parameters('_artifactsLocationSasToken')))]"
 					],
-					"commandToExecute": "[concat('bash install_krustlet.sh', ' ', parameters('krustletURL'), ' ', variables('clusterName'), ' ', parameters('location'), ' ', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('msiName')), ' ', parameters('kubernetesVersion'))]"
+					"commandToExecute": "[concat('bash install_krustlet.sh', ' ', parameters('krustletURL'), ' ', variables('clusterName'), ' ', resourceGroup().id, ' ', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('msiName')), ' ', parameters('kubernetesVersion'))]"
 				}
 			}
 		},
